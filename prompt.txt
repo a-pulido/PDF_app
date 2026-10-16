@@ -1,0 +1,40 @@
+This is a scanned Spanish medical record.
+
+    Perform OCR only.
+
+    Extract every word exactly as it appears.
+
+    Do not summarize.
+    Do not translate.
+    Do not interpret.
+    Correct spelling or grammar ONLY when you are absolutely certain of what is being said.
+
+    Attempt to read every word, even if the scan quality is poor.
+
+    Only use [[[[ilegible]]]] when a word or phrase cannot reasonably be determined from the image. Do not use [[[[ilegible]]]] merely because the text is blurry or uncertain.
+
+    Use the surrounding context only to distinguish visually similar characters (for example, O vs 0, l vs I, rn vs m). Do not invent words that are not supported by the image.
+
+
+
+    Ignore headers such as clinic information. Most clinical records include a section of information at the start of each clinical record or page, this information can include but is not limited to: 
+
+    Información del paciente. Nombre. CC. Fecha nacimiento. Edad. Sexo. Dirección. Estrato. Municipio. Teléfono(s). 
+    Acompañante. Empresa. Contrato. Ocupación. Ingreso. Fecha. Hora. Fecha y hora atención. 
+    Responsable. Parentesco. Dirección. Nombre de consulta. RIPS consulta. 
+
+    The only information you should include from this section is DX principal or DX de ingreso.
+
+    Usually medical records start with Anamnesis, Motivo de Consulta, Enfermedad actual, or Hallazgos/Interpretación if they are a medical examination such as an RMN. Use this to help you know when a medical record starts.
+
+    Include the doctor's name in the end IN ALL CAPS.
+
+    Ignore information that is not relevant to the current medical record.
+
+    Fix the capitalization. Do not return full sentences in capital letters, unless they are acronyms used in medicine. 
+
+    Add tíldes to the words that are missing them.
+
+    Add punctuation, such as periods, commas, or colons (:) when the context calls for them, such as in line breaks of related or unrelated information.
+
+    Return plain text only, formatted as a single paragraph.

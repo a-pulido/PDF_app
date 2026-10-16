@@ -452,7 +452,7 @@ class AnalysisTask:
 
         ttk.Label(
             prompt_card,
-            text="Formatos válidos: (1 de 10), (1 a 3 de 10)",
+            text="Formatos válidos: (folio 1 de 10), (folio 1 a 3 de 10), (folio 1,3, 5-7, 9 a 10 de 12)",
             style="Info.TLabel",
         ).pack(anchor="w", pady=(3, 10))
 
@@ -689,83 +689,73 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 pattern = r"folio\s+(\d+)(?:\s+a\s+(\d+))?\sde\s+(\d+)"
 
-prompt = """
-    This is a scanned Spanish medical record.
-
-    Perform OCR only.
-
-    Extract every word exactly as it appears.
-
-    Do not summarize.
-    Do not translate.
-    Do not interpret.
-    Correct spelling or grammar ONLY when you are absolutely certain of what is being said.
-
-    Attempt to read every word, even if the scan quality is poor.
-
-    Only use [[[[ilegible]]]] when a word or phrase cannot reasonably be determined from the image. Do not use [[[[ilegible]]]] merely because the text is blurry or uncertain.
-
-    Use the surrounding context only to distinguish visually similar characters (for example, O vs 0, l vs I, rn vs m). Do not invent words that are not supported by the image.
+prompt = Path('prompt.txt').read_text()
 
 
+def parse_pages(text):
+    match = re.search(
+        r'folio\s+(?P<range>[\d\s,\-–—a]+)\s+de\s+(?P<length>\d+)',
+        text,
+        re.IGNORECASE
+    )
 
-    Ignore headers such as clinic information. Most clinical records include a section of information at the start of each clinical record or page, this information can include but is not limited to: 
+    if not match:
+        raise ValueError(f"Por favor utilice el formato correcto en la linea: {text}")
 
-    Información del paciente. Nombre. CC. Fecha nacimiento. Edad. Sexo. Dirección. Estrato. Municipio. Teléfono(s). 
-    Acompañante. Empresa. Contrato. Ocupación. Ingreso. Fecha. Hora. Fecha y hora atención. 
-    Responsable. Parentesco. Dirección. Nombre de consulta. RIPS consulta. 
+    page_spec = match.group("range")
+    length = match.group("length")
 
-    The only information you should include from this section is DX principal or DX de ingreso.
+    parts = page_spec.split(",")
 
-    Usually medical records start with Anamnesis, Motivo de Consulta, Enfermedad actual, or Hallazgos/Interpretación if they are a medical examination such as an RMN. Use this to help you know when a medical record starts.
+    ranges = []
+    length = int(length)
+    for part in parts:
+        part = part.strip()
 
-    Include the doctor's name in the end IN ALL CAPS.
+        # Range: 5-7, 5 – 7, 5 a 7, etc.
+        range_match = re.fullmatch(
+            r'(\d+)\s*(?:[-–—]|\ba\b)\s*(\d+)',
+            part,
+            re.IGNORECASE
+        )
 
-    Ignore information that is not relevant to the current medical record.
+        if range_match:
+            start = int(range_match.group(1))
+            end = int(range_match.group(2))
+            if start < end and end <= length:
+                ranges.extend(range(start, end + 1))
+            else:
+                raise Exception(f'Error de formato en la línea: {text}')
+            
+        # Single page: 3
+        else:
+            ranges.append(int(part))
 
-    Fix the capitalization. Do not return full sentences in capital letters, unless they are acronyms used in medicine. 
-
-    Add tíldes to the words that are missing them.
-
-    Add punctuation, such as periods, commas, or colons (:) when the context calls for them, such as in line breaks of related or unrelated information.
-
-    Return plain text only, formatted as a single paragraph."""
+    return ranges, length
 
 
 def process_documents(pdf_paths, instructions):
     
     ranges = []
     pdf_pages = [pdf['pages'] for pdf in pdf_paths]
+    #first run to check no exceptions are raised
     for line in instructions.splitlines():
-        line = line.strip()
-        if line != '':
-            m = re.search(pattern, line, re.IGNORECASE)
-            if m:
-                #print(m.group(1), m.group(2), m.group(3))
-                start = int(m.group(1))
-                end = int(m.group(2)) if m.group(2) else start
-                pages = int(m.group(3))
-                if pages not in pdf_pages:
-                    raise Exception('Una pagina no cuadra con las longitudes de los pdf.')
-                elif end < start:
-                    raise Exception(f'Por favor organice las páginas de menor a mayor: {line}')    
-                ranges.append({'start':start, 'end': end, 'pages':pages, 'line':line})
-            else: 
-                raise Exception(f"Error en la línea: '{line}', no sigue los formatos permitidos.")
+        parse_pages(line.strip())
+
+
 
     output = ''
-
-    for item in ranges:
-        pages = item['pages']
-        pdf_path_list = [pdf['pdf_path'] for pdf in pdf_paths if pdf['pages'] == pages]
-        if len(pdf_path_list) != 1:
-            raise Exception(f'Más de 1 PDF con {pages} páginas')
+    #iterate through the items
+    for line in instructions.splitlines():
+        select_pages, total_pdf_len = parse_pages(line.strip())
+        pdf_path_list = [pdf['pdf_path'] for pdf in pdf_paths if pdf['pages'] == total_pdf_len]
+        if len(pdf_path_list) == 0:
+            raise Exception(f'No eligió un PDF con {total_pdf_len} páginas')
+        elif len(pdf_path_list) != 1:
+            raise Exception(f'Más de 1 PDF con {total_pdf_len} páginas')
         pdf_path = pdf_path_list[0]
-        start = item['start']
-        end = item['end']
-        line = item['line']
-
-        pdf_bytes = extract_pdf_bytes(pdf_path, (start, end))
+        
+        pdf_bytes = extract_pdf_bytes(pdf_path, select_pages)
         try:
             processed_text = call_openai_api(pdf_bytes)
             output += line + ' ' + processed_text.output_text + '\n'
@@ -811,8 +801,8 @@ def extract_pdf_bytes(pdf_path, page_range):
 
     writer = PdfWriter()
 
-    for page in range(page_range[0] - 1, page_range[1]):
-        writer.add_page(reader.pages[page])
+    for page in page_range:
+        writer.add_page(reader.pages[page-1])
 
     pdf_bytes = BytesIO()
     writer.write(pdf_bytes)
