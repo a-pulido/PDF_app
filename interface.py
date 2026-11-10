@@ -323,15 +323,38 @@ class AnalysisTask:
         self.pdf_paths = []
         self.root = parent
 
-        self.frame = ttk.Frame(parent, style='App.TFrame')
-        self.frame.pack(fill='x')
+        self.frame = tk.Frame(
+            parent,
+            bg="#FFFFFF",
+            highlightbackground="#D1D5DB",
+            highlightthickness=1,
+        )
+
+        self.frame.pack(
+            fill="x",
+            padx=8,
+            pady=12,
+        )
+
+        self.content = tk.Frame(
+            self.frame,
+            bg="#FFFFFF",
+        )
+
+        self.content.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5,
+        )
+
 
         # ------------------------------------------------
         # Instrucciones
         # ------------------------------------------------
         
         prompt_card = ttk.Frame(
-            self.frame,
+            self.content,
             style="Card.TFrame",
             padding=20,
         )
@@ -372,7 +395,7 @@ class AnalysisTask:
         # ------------------------------------------------
 
         documents_card = ttk.Frame(
-            self.frame,
+            self.content,
             style="Card.TFrame",
             padding=20,
         )
@@ -484,7 +507,7 @@ class AnalysisTask:
         # ------------------------------------------------
 
         action_area = ttk.Frame(
-            self.frame,
+            self.content,
             style="App.TFrame",
         )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
         action_area.pack(fill="x", pady=(0, 16))
@@ -509,7 +532,7 @@ class AnalysisTask:
         # ------------------------------------------------
 
         result_card = ttk.Frame(
-            self.frame,
+            self.content,
             style="Card.TFrame",
             padding=20,
         )
@@ -575,7 +598,7 @@ class AnalysisTask:
         #ttk.Separator(self.frame, orient='horizontal').pack(fill='x', pady=14, ipady=20)
 
         separator_container = tk.Frame(
-            self.frame,
+            self.content,
             bg="#F4F6F8",
             height=4
         )
