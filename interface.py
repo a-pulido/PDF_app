@@ -326,6 +326,51 @@ class AnalysisTask:
         self.frame = ttk.Frame(parent, style='App.TFrame')
         self.frame.pack(fill='x')
 
+        # ------------------------------------------------
+        # Instrucciones
+        # ------------------------------------------------
+        
+        prompt_card = ttk.Frame(
+            self.frame,
+            style="Card.TFrame",
+            padding=20,
+        )
+        prompt_card.pack(fill="x", pady=(0, 16))
+
+        ttk.Label(
+            prompt_card,
+            text=f"Instrucciones - Grupo de documentos {i}",
+            style="Section.TLabel",
+        ).pack(anchor="w")
+
+        ttk.Label(
+            prompt_card,
+            text="Formatos válidos: (folio 1 de 10), (folio 1 a 3 de 10), (folio 1,3, 5-7, 9 a 10 de 12)",
+            style="Info.TLabel",
+        ).pack(anchor="w", pady=(3, 10))
+
+        self.input_text = ScrolledText(
+            prompt_card,
+            height=6,
+            wrap="word",
+            borderwidth=0,
+            highlightthickness=1,
+            highlightbackground="#E5E7EB",
+            highlightcolor="#2563EB",
+            background="#FAFAFA",
+            foreground="#111827",
+            insertbackground="#111827",
+            font=("Segoe UI", 10),
+            padx=12,
+            pady=12,
+        )
+
+        self.input_text.pack(fill="x")
+
+        # ------------------------------------------------
+        # Tabla de documentos
+        # ------------------------------------------------
+
         documents_card = ttk.Frame(
             self.frame,
             style="Card.TFrame",
@@ -341,7 +386,7 @@ class AnalysisTask:
 
         ttk.Label(
             documents_header,
-            text=f"Grupo de documentos - {i}",
+            text="Documentos a escanear",
             style="Section.TLabel",
         ).pack(side="left")
 
@@ -433,46 +478,6 @@ class AnalysisTask:
             command=self.remove_selected,
         ).pack(side="left", padx=(8, 0))
 
-        # ------------------------------------------------
-                # Prompt card
-                # ------------------------------------------------
-        
-        prompt_card = ttk.Frame(
-            self.frame,
-            style="Card.TFrame",
-            padding=20,
-        )
-        prompt_card.pack(fill="x", pady=(0, 16))
-
-        ttk.Label(
-            prompt_card,
-            text="Instrucciones",
-            style="Section.TLabel",
-        ).pack(anchor="w")
-
-        ttk.Label(
-            prompt_card,
-            text="Formatos válidos: (folio 1 de 10), (folio 1 a 3 de 10), (folio 1,3, 5-7, 9 a 10 de 12)",
-            style="Info.TLabel",
-        ).pack(anchor="w", pady=(3, 10))
-
-        self.input_text = ScrolledText(
-            prompt_card,
-            height=6,
-            wrap="word",
-            borderwidth=0,
-            highlightthickness=1,
-            highlightbackground="#E5E7EB",
-            highlightcolor="#2563EB",
-            background="#FAFAFA",
-            foreground="#111827",
-            insertbackground="#111827",
-            font=("Segoe UI", 10),
-            padx=12,
-            pady=12,
-        )
-
-        self.input_text.pack(fill="x")
 
         # ------------------------------------------------
         # Run area
@@ -525,12 +530,14 @@ class AnalysisTask:
             style="Section.TLabel",
         ).pack(side="left")
 
-        ttk.Button(
+        self.copy_button = ttk.Button(
             result_header,
             text="Copiar",
             style="Secondary.TButton",
             command=self.copy_result,
-        ).pack(side="right")
+        )
+        
+        self.copy_button.pack(side="right")
 
         self.error_frame = ttk.Frame(result_card, style='Card.TFrame')
 
@@ -564,7 +571,32 @@ class AnalysisTask:
             pady=(12, 0),
         )
 
-        ttk.Separator(self.frame, orient='horizontal').pack(fill='x', pady=5)
+        # Separator between Grupos de documentos
+        #ttk.Separator(self.frame, orient='horizontal').pack(fill='x', pady=14, ipady=20)
+
+        separator_container = tk.Frame(
+            self.frame,
+            bg="#F4F6F8",
+            height=4
+        )
+
+        separator_container.pack(
+            fill="x",
+            pady=(18, 18)
+        )
+
+        separator = tk.Frame(
+            separator_container,
+            bg="#B8BEC7",
+            height=2
+        )
+
+        separator.place(
+            relx=0.5,
+            rely=0.5,
+            anchor="center",
+            relwidth=0.65
+        )        
 
     def select_pdfs(self):
         files = filedialog.askopenfilenames(
@@ -608,21 +640,31 @@ class AnalysisTask:
         #print(self.pdf_paths)
 
 
-    def copy_result():
-        pass
+    def copy_result(self):
+        result = self.output_text.get(
+            "1.0",
+            tk.END
+        ).strip()
+
+        self.root.clipboard_clear()
+        self.root.clipboard_append(result)
+
+        self.copy_button.config(
+            text="Texto copiado."
+        )
+
+        self.copy_button.after(
+            1500,
+            lambda: self.copy_button.config(
+                text="Copiar"
+            )
+        )
         
-        ## TODO implement file_count_label
-
-        # count = len(self.pdf_paths)                                                             
-
-        # if count == 1:
-        #     text = "1 PDF selected"
-        # else:
-        #     text = f"{count} PDFs selected"
-
-        # self.file_count_label.config(text=text)
 
     def run(self):
+
+        self.error_frame.pack_forget()
+
         instructions = self.input_text.get(
             "1.0",
             tk.END
@@ -687,20 +729,28 @@ class AnalysisTask:
 load_dotenv()
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-pattern = r"folio\s+(\d+)(?:\s+a\s+(\d+))?\sde\s+(\d+)"
+pattern_old = r'folio\s+(?P<range>[\d\s,\-–—a]+)\s+de\s+(?P<length>\d+)'
+pattern_new = r'Pág.\s+(?P<range>[\d\s,\-–—a]+)/(?P<length>\d+)'
+r"Pág.\s+(\d+)(?:\s+a\s+(\d+))\/(\d+)"
 
 prompt = Path('prompt.txt').read_text()
 
 
 def parse_pages(text):
     match = re.search(
-        r'folio\s+(?P<range>[\d\s,\-–—a]+)\s+de\s+(?P<length>\d+)',
+        pattern_new,
         text,
         re.IGNORECASE
     )
 
     if not match:
-        raise ValueError(f"Por favor utilice el formato correcto en la linea: {text}")
+        match = re.search(
+            pattern_old,
+            text,
+            re.IGNORECASE
+        )
+        if not match:   
+           raise ValueError(f"Por favor utilice el formato correcto en la linea: {text}")
 
     page_spec = match.group("range")
     length = match.group("length")
