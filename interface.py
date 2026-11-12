@@ -274,25 +274,25 @@ class PDFAnalyzerApp:
 
         ttk.Label(
             main,
-            text="v0.1 (Powered by ChatGPT)",
+            text="v0.2 (Powered by ChatGPT)",
             style="Subtitle.TLabel",
         ).pack(anchor="w", pady=(3, 22))
 
         self.task_container = ttk.Frame(
-                    main,
-                    style="App.TFrame",
-                )
+            main,
+            style="App.TFrame",
+        )
         self.task_container.pack(fill='x')
 
         
         self.add_task(self.task_container)
 
         add_task_button = ttk.Button(
-                    main,
-                    text="Agregar nuevo grupo de documentos",
-                    command=lambda: self.add_task(self.task_container),
-                    style="Secondary.TButton"
-                ).pack(side="bottom")
+            main,
+            text="Agregar nuevo grupo de documentos",
+            command=lambda: self.add_task(self.task_container),
+            style="Secondary.TButton"
+        ).pack(side="bottom", pady=(10,0))
 
        
     # ----------------------------------------------------
@@ -323,6 +323,7 @@ class AnalysisTask:
         self.pdf_paths = []
         self.root = parent
 
+        #Outline on outermost frame
         self.frame = tk.Frame(
             parent,
             bg="#FFFFFF",
@@ -336,6 +337,26 @@ class AnalysisTask:
             pady=12,
         )
 
+        #Encabezado: Grupo de documentos - i
+        header = tk.Frame(
+            self.frame,
+            bg="#A8B0B9",
+        )
+
+        header.pack(
+            fill="x",
+        )
+
+        tk.Label(
+            header,
+            text=f"Grupo de documentos - {i}",
+            bg="#A8B0B9",
+            fg="#1F2937",
+            font=("Segoe UI", 14, "bold"),
+        ).pack(side="left", pady=10, padx=10)
+
+
+        #Content frame: Where everything is
         self.content = tk.Frame(
             self.frame,
             bg="#FFFFFF",
@@ -347,6 +368,8 @@ class AnalysisTask:
             padx=5,
             pady=5,
         )
+
+        
 
 
         # ------------------------------------------------
@@ -362,7 +385,7 @@ class AnalysisTask:
 
         ttk.Label(
             prompt_card,
-            text=f"Instrucciones - Grupo de documentos {i}",
+            text="Instrucciones",
             style="Section.TLabel",
         ).pack(anchor="w")
 
@@ -510,14 +533,14 @@ class AnalysisTask:
             self.content,
             style="App.TFrame",
         )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-        action_area.pack(fill="x", pady=(0, 16))
+        action_area.pack(fill="x", pady=(0, 16), padx=20)
 
         self.status_label = ttk.Label(
             action_area,
             text="Listo",
             style="Subtitle.TLabel",
         )
-        self.status_label.pack(side="left")
+        self.status_label.pack(side="left", padx=(3, 0))
 
         self.run_button = ttk.Button(
             action_area,
@@ -598,14 +621,14 @@ class AnalysisTask:
         #ttk.Separator(self.frame, orient='horizontal').pack(fill='x', pady=14, ipady=20)
 
         separator_container = tk.Frame(
-            self.content,
+            parent,
             bg="#F4F6F8",
             height=4
         )
 
         separator_container.pack(
             fill="x",
-            pady=(18, 18)
+            pady=10
         )
 
         separator = tk.Frame(
@@ -618,7 +641,7 @@ class AnalysisTask:
             relx=0.5,
             rely=0.5,
             anchor="center",
-            relwidth=0.65
+            relwidth=0.80
         )        
 
     def select_pdfs(self):
@@ -753,6 +776,7 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 pattern_old = r'folio\s+(?P<range>[\d\s,\-–—a]+)\s+de\s+(?P<length>\d+)'
+pattern_old = r'folio\s+(?P<range>[\d\s,\-–—a]+)/(?P<length>\d+)'
 pattern_new = r'Pág.\s+(?P<range>[\d\s,\-–—a]+)/(?P<length>\d+)'
 r"Pág.\s+(\d+)(?:\s+a\s+(\d+))\/(\d+)"
 
